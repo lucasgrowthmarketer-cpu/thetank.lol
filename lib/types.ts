@@ -3,6 +3,7 @@ export type Fish = {
   name: string;
   url: string;
   logo: string;
+  image?: string;   // optional image URL supplied by the buyer
   weight: number;      // dollars invested in this fish = its size
   hue: number;         // 0-360
   seed: number;        // deterministic swim pattern

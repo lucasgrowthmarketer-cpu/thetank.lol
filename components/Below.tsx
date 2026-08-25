@@ -1,20 +1,10 @@
 "use client";
 import type { PublicFish, StateResponse } from "@/lib/types";
 import { LogoMark } from "./Logo";
+import { avatarSources } from "@/lib/avatar";
 
 function Logo({ f, size = 28 }: { f: PublicFish; size?: number }) {
-  const host = (() => { try { return new URL(f.url).hostname; } catch { return ""; } })();
-  const parts = host.split(".");
-  const root = parts.length > 2 ? parts.slice(-2).join(".") : host;
-  const sources = host ? [
-    `https://${host}/favicon.ico`,
-    `https://${host}/favicon.png`,
-    `https://${host}/apple-touch-icon.png`,
-    `https://${root}/favicon.ico`,
-    `https://icons.duckduckgo.com/ip3/${host}.ico`,
-    `https://icons.duckduckgo.com/ip3/${root}.ico`,
-    `https://www.google.com/s2/favicons?domain=${root}&sz=64`,
-  ] : [];
+  const sources = avatarSources(f.url, f.image);
   return (
     <span className="inline-flex shrink-0 items-center justify-center overflow-hidden rounded bg-white" style={{ width: size, height: size }}>
       {sources.length ? (

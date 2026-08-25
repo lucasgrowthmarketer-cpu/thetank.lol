@@ -38,6 +38,13 @@ export function cleanUrl(raw: string) {
   return parsed.toString();
 }
 
+export function cleanImageUrl(raw: string) {
+  const u = new URL(raw.trim());
+  if (u.protocol !== "https:") throw new Error("image link must start with https");
+  if (u.href.length > 500) throw new Error("image link too long");
+  return u.toString();
+}
+
 export function cleanName(raw: string) {
   const n = raw.replace(/[\u0000-\u001f<>]/g, "").trim().slice(0, 32);
   if (n.length < 1) throw new Error("name required");
@@ -63,6 +70,7 @@ export async function applyAction(sessionId: string, meta: Record<string, string
     const url = cleanUrl(meta.url || "");
     const fish: Omit<Fish, "_id"> = {
       name, url, logo: faviconFor(url),
+      image: meta.image || undefined,
       weight: amount,
       hue: Math.floor(Math.random() * 360),
       seed: Math.random(),

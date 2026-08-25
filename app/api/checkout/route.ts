@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import Stripe from "stripe";
 import { randomBytes } from "crypto";
-import { applyAction, cleanName, cleanUrl, db, oid } from "@/lib/db";
+import { applyAction, cleanImageUrl, cleanName, cleanUrl, db, oid } from "@/lib/db";
 import { MIN_FEED, MIN_SPAWN } from "@/lib/types";
 
 export const dynamic = "force-dynamic";
@@ -18,6 +18,7 @@ export async function POST(req: Request) {
       meta.name = cleanName(body.name || "");
       meta.url = cleanUrl(body.url || "");
       meta.ownerKey = randomBytes(12).toString("hex");
+      if (body.image) meta.image = cleanImageUrl(body.image);
       amount = Math.max(MIN_SPAWN, Math.floor(Number(body.amount) || MIN_SPAWN));
       label = `New fish: ${meta.name}`;
     } else if (body.action === "feed") {

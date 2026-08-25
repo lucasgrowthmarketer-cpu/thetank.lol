@@ -4,6 +4,7 @@ import type { PublicFish, StateResponse } from "@/lib/types";
 import { sizeFor } from "@/lib/types";
 import Below from "./Below";
 import { Wordmark } from "./Logo";
+import { avatarSources, hasAvatarProvider, isGenericHost } from "@/lib/avatar";
 
 /* ---------- simulation ---------- */
 type Sim = PublicFish & { x: number; y: number; vx: number; dir: 1 | -1; img?: HTMLImageElement; dash?: { x: number; y: number; t0: number } };
@@ -27,30 +28,17 @@ const MASK = [
 /* logo loading: DuckDuckGo first, Google fallback, then the initial letter.
    No crossOrigin flag: a tainted canvas is fine, we never export it. */
 const imgCache = new Map<string, HTMLImageElement>();
-function rootDomain(host: string) {
-  const parts = host.split(".");
-  return parts.length > 2 ? parts.slice(-2).join(".") : host;
-}
-function logoImg(url: string) {
-  let host = "";
-  try { host = new URL(url).hostname; } catch { return undefined; }
-  let im = imgCache.get(host);
+function logoImg(url: string, custom?: string) {
+  const key = (custom || "") + "|" + url;
+  let im = imgCache.get(key);
   if (im) return im;
+  const sources = avatarSources(url, custom);
+  if (!sources.length) return undefined;
   im = new Image();
-  const root = rootDomain(host);
-  const sources = [
-    `https://${host}/favicon.ico`,
-    `https://${host}/favicon.png`,
-    `https://${host}/apple-touch-icon.png`,
-    `https://${root}/favicon.ico`,
-    `https://icons.duckduckgo.com/ip3/${host}.ico`,
-    `https://icons.duckduckgo.com/ip3/${root}.ico`,
-    `https://www.google.com/s2/favicons?domain=${root}&sz=128`,
-  ];
   let i = 0;
   im.onerror = () => { i += 1; if (i < sources.length) im!.src = sources[i]; };
   im.src = sources[0];
-  imgCache.set(host, im);
+  imgCache.set(key, im);
   return im;
 }
 
@@ -159,7 +147,7 @@ export default function Tank() {
       const ex = sim.get(f._id);
       if (ex) { ex.weight = f.weight; ex.name = f.name; ex.url = f.url; continue; }
       const dir = Math.random() < 0.5 ? 1 : -1;
-      sim.set(f._id, { ...f, x: 100 + Math.random() * (W - 200), y: 110 + Math.random() * (H - 220), vx: dir * (0.5 + Math.random() * 0.6), dir, img: logoImg(f.url) });
+      sim.set(f._id, { ...f, x: 100 + Math.random() * (W - 200), y: 110 + Math.random() * (H - 220), vx: dir * (0.5 + Math.random() * 0.6), dir, img: logoImg(f.url, f.image) });
     }
     for (const [id, f] of sim) {
       if (seen.has(id)) continue;
@@ -323,7 +311,7 @@ export default function Tank() {
           </button>
         )}
 
-        {mode === "spawn" && <SpawnForm key={prefill?.url || "new"} busy={busy} prefill={prefill} onCancel={() => setMode("idle")} onSubmit={(name, url, amount) => act({ action: "spawn", name, url, amount })} />}
+        {mode === "spawn" && <SpawnForm key={prefill?.url || "new"} busy={busy} prefill={prefill} onCancel={() => setMode("idle")} onSubmit={(name, url, amount, image) => act({ action: "spawn", name, url, amount, image })} />}
 
         {selected && mode !== "spawn" && (
           <div className="glass absolute bottom-20 right-4 w-[min(92vw,320px)] rounded p-4 sm:bottom-4 sm:right-64">
@@ -357,23 +345,30 @@ export default function Tank() {
   );
 }
 
-function SpawnForm({ busy, prefill, onCancel, onSubmit }: { busy: boolean; prefill?: { name: string; url: string }; onCancel: () => void; onSubmit: (n: string, u: string, a: number) => void }) {
+function SpawnForm({ busy, prefill, onCancel, onSubmit }: { busy: boolean; prefill?: { name: string; url: string }; onCancel: () => void; onSubmit: (n: string, u: string, a: number, img?: string) => void }) {
   const [name, setName] = useState(prefill?.name || "");
   const [url, setUrl] = useState(prefill?.url || "");
   const [amount, setAmount] = useState(prefill ? 5 : 1);
   const [custom, setCustom] = useState("");
+  const [image, setImage] = useState("");
+  const normalized = url.trim() ? (/^https?:\/\//i.test(url.trim()) ? url.trim() : "https://" + url.trim()) : "";
+  const generic = normalized ? isGenericHost(normalized) : false;
+  const auto = normalized ? hasAvatarProvider(normalized) : false;
   const final = custom ? clampAmount(custom) : amount;
   return (
     <div className="glass absolute bottom-4 right-4 w-[min(92vw,340px)] rounded p-4">
       <div className="font-pixel text-xl">{prefill ? "Come back bigger" : "New fish"}</div>
-      <p className="mt-1 text-xs text-foam/70">Your logo is pulled from your site automatically. Weight = dollars. A $1 fish is a snack; a $20 fish is a threat.</p>
+      <p className="mt-1 text-xs text-foam/70">Your logo is pulled from your site automatically, or your profile picture from X, Telegram, GitHub, Instagram and YouTube. Weight = dollars.</p>
       <label className="mt-3 block text-xs">Name<input value={name} onChange={(e) => setName(e.target.value)} maxLength={32} placeholder="Acme" className="mt-1 w-full rounded bg-abyss/70 px-2 py-1.5 text-sm text-foam" /></label>
-      <label className="mt-2 block text-xs">Link<input value={url} onChange={(e) => setUrl(e.target.value)} placeholder="acme.com" className="mt-1 w-full rounded bg-abyss/70 px-2 py-1.5 text-sm text-foam" /></label>
+      <label className="mt-2 block text-xs">Link<input value={url} onChange={(e) => setUrl(e.target.value)} placeholder="acme.com, x.com/you, t.me/channel" className="mt-1 w-full rounded bg-abyss/70 px-2 py-1.5 text-sm text-foam" /></label>
+      {auto && <div className="mt-1 text-[11px] text-kelp">Profile picture detected, it will be used automatically.</div>}
+      {generic && !auto && !image && <div className="mt-1 text-[11px] text-coral">This platform only gives us its own logo. Paste an image link below so your fish is recognisable.</div>}
+      <label className="mt-2 block text-xs">Picture <span className="text-foam/50">(optional, https link to an image)</span><input value={image} onChange={(e) => setImage(e.target.value)} placeholder="https://…/logo.png" className="mt-1 w-full rounded bg-abyss/70 px-2 py-1.5 text-sm text-foam" /></label>
       <label className="mt-2 block text-xs">Starting weight<div className="mt-1 flex gap-1">{[1, 5, 10, 20, 50].map((a) => (<button key={a} type="button" onClick={() => { setAmount(a); setCustom(""); }} className={`flex-1 rounded px-1 py-1.5 text-sm ${amount === a && !custom ? "bg-sand text-abyss" : "bg-abyss/70 text-foam"}`}>${a}</button>))}
         <input value={custom} onChange={(e) => setCustom(e.target.value.replace(/[^0-9]/g, ""))} placeholder="$…" inputMode="numeric" className={`w-14 rounded px-2 py-1.5 text-center text-sm ${custom ? "bg-sand text-abyss" : "bg-abyss/70 text-foam"}`} /></div></label>
       <div className="mt-2 rounded bg-abyss/50 p-2 text-[11px] text-foam/70">You get: your logo swimming here, a permanent row with a live link on the board, and a podium spot if you reach the top 3.</div>
       <div className="mt-3 flex gap-2">
-        <button disabled={busy || !name || !url || final < 1} onClick={() => onSubmit(name, url, final)} className="flex-1 rounded bg-coral px-3 py-2 font-pixel text-lg text-abyss disabled:opacity-50">Pay ${final}</button>
+        <button disabled={busy || !name || !url || final < 1} onClick={() => onSubmit(name, url, final, image.trim() || undefined)} className="flex-1 rounded bg-coral px-3 py-2 font-pixel text-lg text-abyss disabled:opacity-50">Pay ${final}</button>
         <button onClick={onCancel} className="rounded px-3 py-2 text-sm text-foam/70">cancel</button>
       </div>
     </div>
