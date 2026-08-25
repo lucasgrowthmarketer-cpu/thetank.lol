@@ -118,6 +118,15 @@ export default function Tank() {
       say("Payment received. Your fish is entering the tank.");
       window.history.replaceState({}, "", "/");
     }
+    // one lightweight ping per page load, so we know where people come from
+    try {
+      let visitor = localStorage.getItem("tank_visitor");
+      if (!visitor) { visitor = Math.random().toString(36).slice(2) + Date.now().toString(36); localStorage.setItem("tank_visitor", visitor); }
+      fetch("/api/track", {
+        method: "POST", headers: { "Content-Type": "application/json" }, keepalive: true,
+        body: JSON.stringify({ source: u.searchParams.get("s") || u.searchParams.get("utm_source") || "", referrer: document.referrer || "", visitor }),
+      }).catch(() => {});
+    } catch {}
   }, []);
 
   const load = useCallback(async () => {

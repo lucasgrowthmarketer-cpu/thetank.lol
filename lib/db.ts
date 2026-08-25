@@ -14,6 +14,8 @@ export async function db(): Promise<Db> {
       d.collection("fish").createIndex({ alive: 1 }),
       d.collection("events").createIndex({ at: -1 }),
       d.collection("payments").createIndex({ sessionId: 1 }, { unique: true }),
+      d.collection("visits").createIndex({ at: -1 }),
+      d.collection("visits").createIndex({ source: 1 }),
     ]).catch(() => {});
   }
   return client.db();
