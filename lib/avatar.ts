@@ -29,16 +29,16 @@ export function avatarSources(rawUrl: string, custom?: string): string[] {
     else if (r === "substack.com" || host.endsWith(".substack.com")) out.push(`https://unavatar.io/substack/${host.split(".")[0]}`);
     else if (r === "producthunt.com") out.push(`https://unavatar.io/producthunt/${seg[1] || handle}`);
   }
-  // plain websites, and the fallback for everything above
+  // plain websites, and the fallback for everything above.
+  // This order is the one that was verified working, do not reshuffle it.
   out.push(
     `https://${host}/favicon.ico`,
     `https://${host}/favicon.png`,
     `https://${host}/apple-touch-icon.png`,
     `https://${r}/favicon.ico`,
-    `https://www.google.com/s2/favicons?domain=${host}&sz=128`,
-    `https://www.google.com/s2/favicons?domain=${r}&sz=128`,
     `https://icons.duckduckgo.com/ip3/${host}.ico`,
     `https://icons.duckduckgo.com/ip3/${r}.ico`,
+    `https://www.google.com/s2/favicons?domain=${r}&sz=128`,
   );
   return out;
 }
