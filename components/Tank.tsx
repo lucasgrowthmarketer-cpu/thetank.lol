@@ -39,11 +39,13 @@ function logoImg(url: string) {
   im = new Image();
   const root = rootDomain(host);
   const sources = [
+    `https://${host}/favicon.ico`,
+    `https://${host}/favicon.png`,
+    `https://${host}/apple-touch-icon.png`,
+    `https://${root}/favicon.ico`,
     `https://icons.duckduckgo.com/ip3/${host}.ico`,
     `https://icons.duckduckgo.com/ip3/${root}.ico`,
     `https://www.google.com/s2/favicons?domain=${root}&sz=128`,
-    `https://${root}/favicon.ico`,
-    `https://${host}/favicon.ico`,
   ];
   let i = 0;
   im.onerror = () => { i += 1; if (i < sources.length) im!.src = sources[i]; };
