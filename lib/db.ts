@@ -113,9 +113,10 @@ export async function applyAction(sessionId: string, meta: Record<string, string
 
 export async function getState() {
   const d = await db();
-  const [fish, dead, events, sums, eaten] = await Promise.all([
+  const [fish, dead, legends, events, sums, eaten] = await Promise.all([
     d.collection("fish").find({ alive: true }, { projection: { ownerKey: 0 } }).sort({ weight: -1 }).limit(400).toArray(),
     d.collection("fish").find({ alive: false }, { projection: { ownerKey: 0 } }).sort({ eatenAt: -1 }).limit(30).toArray(),
+    d.collection("fish").find({}, { projection: { ownerKey: 0 } }).sort({ weight: -1 }).limit(5).toArray(),
     d.collection("events").find().sort({ at: -1 }).limit(20).toArray(),
     d.collection("payments").aggregate([{ $group: { _id: null, total: { $sum: "$amount" } } }]).toArray(),
     d.collection("fish").countDocuments({ alive: false }),
@@ -123,6 +124,7 @@ export async function getState() {
   return {
     fish: fish.map((f) => ({ ...f, _id: String(f._id) })),
     dead: dead.map((f) => ({ ...f, _id: String(f._id) })),
+    legends: legends.map((f) => ({ ...f, _id: String(f._id) })),
     events: events.map((e) => ({ ...e, _id: String(e._id) })),
     biomass: sums[0]?.total ?? 0,
     eaten,

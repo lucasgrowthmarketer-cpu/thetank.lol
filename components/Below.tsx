@@ -34,6 +34,7 @@ const ago = (iso: string) => {
 export default function Below({ state, onFeed, onSpawn, myIds }: { state: StateResponse | null; onFeed: (f: PublicFish) => void; onSpawn: (prefill?: { name: string; url: string }) => void; myIds: string[] }) {
   const fish = state?.fish ?? [];
   const dead = state?.dead ?? [];
+  const legends = state?.legends ?? [];
   const apex = fish[0];
   return (
     <div className="mx-auto max-w-5xl px-4 pb-24">
@@ -67,6 +68,29 @@ export default function Below({ state, onFeed, onSpawn, myIds }: { state: StateR
                 <div className="text-xs text-kelp">{f.url.replace(/^https?:\/\//, "").replace(/\/$/, "")}</div>
                 <div className="led mt-2 text-3xl">${f.weight}</div>
                 <div className="text-[11px] text-foam/50">{f.kills ?? 0} kills · eat price ${f.weight + 1}</div>
+              </a>
+            ))}
+          </div>
+        </section>
+      )}
+
+      {/* legends */}
+      {legends.length > 0 && (
+        <section id="legends" className="py-8">
+          <div className="eyebrow">legends</div>
+          <h2 className="section-title mt-1">The biggest investments, ever</h2>
+          <p className="mt-2 max-w-2xl text-sm text-foam/70">Alive or eaten, the five heaviest fish in the history of the tank stay here. Getting eaten costs you the podium, not your place in the legends.</p>
+          <div className="glass mt-5 divide-y divide-foam/10 rounded">
+            {legends.map((f, i) => (
+              <a key={f._id} href={f.url} target="_blank" rel="noopener" className={`flex items-center gap-4 px-4 py-3 hover:bg-foam/5 ${f.alive ? "" : "opacity-70"}`}>
+                <span className="rank w-8 text-xl">{i + 1}</span>
+                <span className={f.alive ? "" : "grayscale"}><Logo f={f} size={36} /></span>
+                <span className="min-w-0 flex-1">
+                  <span className={`font-semibold ${f.alive ? "" : "line-through decoration-coral"}`}>{f.name}</span>
+                  <span className="ml-2 text-xs text-foam/50">{f.url.replace(/^https?:\/\//, "").replace(/\/$/, "")}</span>
+                  {!f.alive && <span className="ml-2 text-xs text-coral">eaten by {f.eatenBy}</span>}
+                </span>
+                <span className="led text-2xl">${f.weight}</span>
               </a>
             ))}
           </div>

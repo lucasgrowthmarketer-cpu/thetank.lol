@@ -28,6 +28,7 @@ export type Event = {
 export type StateResponse = {
   fish: PublicFish[];
   dead: PublicFish[];
+  legends: PublicFish[];   // top 5 all time, alive or eaten
   events: Event[];
   biomass: number;     // total $ ever paid into the tank
   eaten: number;       // fish eaten so far
