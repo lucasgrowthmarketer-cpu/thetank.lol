@@ -27,13 +27,24 @@ const MASK = [
 /* logo loading: DuckDuckGo first, Google fallback, then the initial letter.
    No crossOrigin flag: a tainted canvas is fine, we never export it. */
 const imgCache = new Map<string, HTMLImageElement>();
+function rootDomain(host: string) {
+  const parts = host.split(".");
+  return parts.length > 2 ? parts.slice(-2).join(".") : host;
+}
 function logoImg(url: string) {
   let host = "";
   try { host = new URL(url).hostname; } catch { return undefined; }
   let im = imgCache.get(host);
   if (im) return im;
   im = new Image();
-  const sources = [`https://icons.duckduckgo.com/ip3/${host}.ico`, `https://www.google.com/s2/favicons?domain=${host}&sz=128`];
+  const root = rootDomain(host);
+  const sources = [
+    `https://icons.duckduckgo.com/ip3/${host}.ico`,
+    `https://icons.duckduckgo.com/ip3/${root}.ico`,
+    `https://www.google.com/s2/favicons?domain=${root}&sz=128`,
+    `https://${root}/favicon.ico`,
+    `https://${host}/favicon.ico`,
+  ];
   let i = 0;
   im.onerror = () => { i += 1; if (i < sources.length) im!.src = sources[i]; };
   im.src = sources[0];
@@ -122,7 +133,7 @@ export default function Tank() {
   const load = useCallback(async () => {
     try {
       const r = await fetch("/api/state", { cache: "no-store" });
-      const s: StateResponse = await r.json(); if (!r.ok || !Array.isArray(s.fish)) { console.warn("state unavailable", s); return; }
+      const s: StateResponse = await r.json();
       const pending = localStorage.getItem("tank_pending_key");
       if (pending && s.fish.length) {
         const keys = JSON.parse(localStorage.getItem("tank_keys") || "{}");
@@ -241,7 +252,7 @@ export default function Tank() {
     const r = canvasRef.current!.getBoundingClientRect();
     const x = e.clientX - r.left, y = e.clientY - r.top;
     let best: Sim | null = null;
-    for (const f of simRef.current.values()) { const s = sizeFor(f.weight); if (Math.abs(f.x - x) < s / 2 + 6 && Math.abs(f.y - y) < s / 3 + 10) if (!best || f.weight > best.weight) best = f; }
+    for (const f of simRef.current.values()) { const s = sizeFor(f.weight); if (Math.abs(f.x - x) < s / 2 + 10 && Math.abs(f.y - y) < s * 0.45 + 12) if (!best || f.weight > best.weight) best = f; }
     return best;
   };
   const onMove = (e: React.MouseEvent) => { const f = hit(e); hoverRef.current = f?._id ?? null; canvasRef.current!.style.cursor = f ? "pointer" : "default"; };
@@ -278,15 +289,16 @@ export default function Tank() {
         <div className="caustics" />
         <canvas ref={canvasRef} className="absolute inset-0 h-full w-full" onMouseMove={onMove} onClick={onClick} aria-label="Aquarium of paid fish" />
 
-        <header className="absolute left-0 right-0 top-0 flex items-start justify-between p-4">
-          <div className="max-w-[360px] select-none">
+        <header className="pointer-events-none absolute left-0 right-0 top-0 flex items-start justify-between p-4">
+          <div className="pointer-events-auto max-w-[360px] select-none">
             <Wordmark />
             <p className="mt-2 text-sm text-foam/85">$1 buys you a fish with your logo. Feed it to grow. Get heavier than a rival and eat them. Every dollar is public.</p>
+            <p className="mt-1 text-xs text-sand/90">You get: your logo in the water, a permanent row with your link on the board below, and the podium if you are top 3.</p>
             <nav className="mt-2 hidden gap-3 text-xs text-foam/60 sm:flex">
               <a href="#board" className="hover:text-foam">board</a><a href="#eaten" className="hover:text-foam">the eaten</a><a href="#laws" className="hover:text-foam">laws</a>
             </nav>
           </div>
-          <div className="sign px-4 py-2 text-right select-none">
+          <div className="pointer-events-auto sign px-4 py-2 text-right select-none">
             <div className="text-[10px] uppercase tracking-widest text-foam/60">total biomass</div>
             <div className="led text-4xl leading-none sm:text-5xl">${state?.biomass ?? 0}</div>
             <div className="mt-1 text-[11px] text-foam/60">{state?.fish.length ?? 0} alive · {state?.eaten ?? 0} eaten{state?.demo ? " · DEMO" : ""}</div>
@@ -326,6 +338,7 @@ export default function Tank() {
             ) : (
               <div className="mt-3 flex flex-wrap gap-2">
                 {[1, 5, 20].map((a) => <button key={a} disabled={busy} onClick={() => act({ action: "feed", fishId: selected._id, amount: a })} className="rounded bg-sand px-3 py-1.5 text-sm font-semibold text-abyss hover:brightness-110 disabled:opacity-50">Feed ${a}</button>)}
+                <CustomAmount busy={busy} label="Feed" onGo={(a) => act({ action: "feed", fishId: selected._id, amount: a })} />
                 {mine && <button disabled={busy || prey === 0} onClick={() => setMode("eat")} className="rounded border border-coral px-3 py-1.5 text-sm text-coral disabled:opacity-40">Eat a fish</button>}
               </div>
             )}
@@ -346,17 +359,34 @@ function SpawnForm({ busy, prefill, onCancel, onSubmit }: { busy: boolean; prefi
   const [name, setName] = useState(prefill?.name || "");
   const [url, setUrl] = useState(prefill?.url || "");
   const [amount, setAmount] = useState(prefill ? 5 : 1);
+  const [custom, setCustom] = useState("");
+  const final = custom ? clampAmount(custom) : amount;
   return (
     <div className="glass absolute bottom-4 right-4 w-[min(92vw,340px)] rounded p-4">
       <div className="font-pixel text-xl">{prefill ? "Come back bigger" : "New fish"}</div>
       <p className="mt-1 text-xs text-foam/70">Your logo is pulled from your site automatically. Weight = dollars. A $1 fish is a snack; a $20 fish is a threat.</p>
       <label className="mt-3 block text-xs">Name<input value={name} onChange={(e) => setName(e.target.value)} maxLength={32} placeholder="Acme" className="mt-1 w-full rounded bg-abyss/70 px-2 py-1.5 text-sm text-foam" /></label>
       <label className="mt-2 block text-xs">Link<input value={url} onChange={(e) => setUrl(e.target.value)} placeholder="acme.com" className="mt-1 w-full rounded bg-abyss/70 px-2 py-1.5 text-sm text-foam" /></label>
-      <label className="mt-2 block text-xs">Starting weight<div className="mt-1 flex gap-1">{[1, 5, 20, 50].map((a) => (<button key={a} type="button" onClick={() => setAmount(a)} className={`flex-1 rounded px-2 py-1.5 text-sm ${amount === a ? "bg-sand text-abyss" : "bg-abyss/70 text-foam"}`}>${a}</button>))}</div></label>
+      <label className="mt-2 block text-xs">Starting weight<div className="mt-1 flex gap-1">{[1, 5, 10, 20, 50].map((a) => (<button key={a} type="button" onClick={() => { setAmount(a); setCustom(""); }} className={`flex-1 rounded px-1 py-1.5 text-sm ${amount === a && !custom ? "bg-sand text-abyss" : "bg-abyss/70 text-foam"}`}>${a}</button>))}
+        <input value={custom} onChange={(e) => setCustom(e.target.value.replace(/[^0-9]/g, ""))} placeholder="$…" inputMode="numeric" className={`w-14 rounded px-2 py-1.5 text-center text-sm ${custom ? "bg-sand text-abyss" : "bg-abyss/70 text-foam"}`} /></div></label>
+      <div className="mt-2 rounded bg-abyss/50 p-2 text-[11px] text-foam/70">You get: your logo swimming here, a permanent row with a live link on the board, and a podium spot if you reach the top 3.</div>
       <div className="mt-3 flex gap-2">
-        <button disabled={busy || !name || !url} onClick={() => onSubmit(name, url, amount)} className="flex-1 rounded bg-coral px-3 py-2 font-pixel text-lg text-abyss disabled:opacity-50">Pay ${amount}</button>
+        <button disabled={busy || !name || !url || final < 1} onClick={() => onSubmit(name, url, final)} className="flex-1 rounded bg-coral px-3 py-2 font-pixel text-lg text-abyss disabled:opacity-50">Pay ${final}</button>
         <button onClick={onCancel} className="rounded px-3 py-2 text-sm text-foam/70">cancel</button>
       </div>
     </div>
+  );
+}
+
+function clampAmount(v: string) { const n = Math.floor(Number(v)); return isFinite(n) ? Math.min(5000, Math.max(0, n)) : 0; }
+
+function CustomAmount({ busy, label, onGo }: { busy: boolean; label: string; onGo: (a: number) => void }) {
+  const [v, setV] = useState("");
+  const n = clampAmount(v);
+  return (
+    <span className="flex items-center gap-1">
+      <input value={v} onChange={(e) => setV(e.target.value.replace(/[^0-9]/g, ""))} placeholder="$…" inputMode="numeric" className="w-14 rounded bg-abyss/70 px-2 py-1.5 text-center text-sm text-foam" />
+      <button disabled={busy || n < 1} onClick={() => onGo(n)} className="rounded border border-sand px-2 py-1.5 text-sm text-sand disabled:opacity-40">{label}</button>
+    </span>
   );
 }

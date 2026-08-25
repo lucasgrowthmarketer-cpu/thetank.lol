@@ -4,14 +4,22 @@ import { LogoMark } from "./Logo";
 
 function Logo({ f, size = 28 }: { f: PublicFish; size?: number }) {
   const host = (() => { try { return new URL(f.url).hostname; } catch { return ""; } })();
+  const parts = host.split(".");
+  const root = parts.length > 2 ? parts.slice(-2).join(".") : host;
+  const sources = host ? [
+    `https://icons.duckduckgo.com/ip3/${host}.ico`,
+    `https://icons.duckduckgo.com/ip3/${root}.ico`,
+    `https://www.google.com/s2/favicons?domain=${root}&sz=64`,
+    `https://${root}/favicon.ico`,
+  ] : [];
   return (
     <span className="inline-flex shrink-0 items-center justify-center overflow-hidden rounded bg-white" style={{ width: size, height: size }}>
-      {host ? (
+      {sources.length ? (
         // eslint-disable-next-line @next/next/no-img-element
-        <img src={`https://icons.duckduckgo.com/ip3/${host}.ico`} alt="" width={size - 6} height={size - 6}
-          onError={(e) => { const el = e.currentTarget; if (!el.dataset.fb) { el.dataset.fb = "1"; el.src = `https://www.google.com/s2/favicons?domain=${host}&sz=64`; } else { el.style.display = "none"; } }} />
+        <img src={sources[0]} alt="" width={size - 6} height={size - 6}
+          onError={(e) => { const el = e.currentTarget; const i = Number(el.dataset.i || 0) + 1; if (i < sources.length) { el.dataset.i = String(i); el.src = sources[i]; } else { el.style.display = "none"; (el.nextSibling as HTMLElement).style.display = "inline"; } }} />
       ) : null}
-      <span className="font-pixel text-abyss" style={{ display: "none" }}>{f.name[0]}</span>
+      <span className="font-pixel text-abyss" style={{ display: sources.length ? "none" : "inline" }}>{f.name[0]}</span>
     </span>
   );
 }
@@ -43,6 +51,27 @@ export default function Below({ state, onFeed, onSpawn, myIds }: { state: StateR
           </div>
         ))}
       </section>
+
+      {/* podium */}
+      {fish.length > 0 && (
+        <section id="podium" className="py-8">
+          <div className="eyebrow">the podium</div>
+          <h2 className="section-title mt-1">The three heaviest fish alive</h2>
+          <p className="mt-2 max-w-2xl text-sm text-foam/70">Top 3 gets the big card, the big logo and the first thing visitors see under the water. Anyone can be pushed off it.</p>
+          <div className="mt-5 grid gap-3 sm:grid-cols-3">
+            {fish.slice(0, 3).map((f, i) => (
+              <a key={f._id} href={f.url} target="_blank" rel="noopener" className={`glass flex flex-col items-center rounded p-5 text-center transition hover:border-sand/60 ${i === 0 ? "sm:order-2 sm:-mt-4 border-sand/40" : i === 1 ? "sm:order-1" : "sm:order-3"}`}>
+                <div className="rank text-2xl">{i === 0 ? "#1 apex predator" : `#${i + 1}`}</div>
+                <div className="mt-3"><Logo f={f} size={i === 0 ? 96 : 72} /></div>
+                <div className="mt-3 font-pixel text-2xl">{f.name}</div>
+                <div className="text-xs text-kelp">{f.url.replace(/^https?:\/\//, "").replace(/\/$/, "")}</div>
+                <div className="led mt-2 text-3xl">${f.weight}</div>
+                <div className="text-[11px] text-foam/50">{f.kills ?? 0} kills · eat price ${f.weight + 1}</div>
+              </a>
+            ))}
+          </div>
+        </section>
+      )}
 
       {/* leaderboard */}
       <section id="board" className="py-8">
