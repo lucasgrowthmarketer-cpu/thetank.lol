@@ -121,6 +121,30 @@ export async function applyAction(sessionId: string, meta: Record<string, string
   throw new Error("unknown action");
 }
 
+export async function getFish(id: string) {
+  const _id = oid(id);
+  if (!_id) return null;
+  const d = await db();
+  const f = await d.collection("fish").findOne({ _id }, { projection: { ownerKey: 0 } });
+  if (!f) return null;
+  const [heavier, alive, biomass] = await Promise.all([
+    d.collection("fish").countDocuments({ alive: true, weight: { $gt: f.weight } }),
+    d.collection("fish").countDocuments({ alive: true }),
+    d.collection("payments").aggregate([{ $group: { _id: null, t: { $sum: "$amount" } } }]).toArray(),
+  ]);
+  return {
+    ...f,
+    _id: String(f._id),
+    rank: f.alive ? heavier + 1 : null,
+    aliveCount: alive,
+    biomass: biomass[0]?.t ?? 0,
+  } as unknown as {
+    _id: string; name: string; url: string; image?: string; weight: number; hue: number;
+    alive: boolean; kills?: number; eatenBy?: string; eatenAt?: string; createdAt: string;
+    rank: number | null; aliveCount: number; biomass: number;
+  };
+}
+
 export async function getState() {
   const d = await db();
   const [fish, dead, legends, events, sums, eaten] = await Promise.all([

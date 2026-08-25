@@ -341,7 +341,11 @@ export default function Tank() {
                 {mine && <button disabled={busy || prey === 0} onClick={() => setMode("eat")} className="rounded border border-coral px-3 py-1.5 text-sm text-coral disabled:opacity-40">Eat a fish</button>}
               </div>
             )}
-            <button onClick={() => { setSelected(null); setMode("idle"); }} className="mt-3 text-[11px] text-foam/60 underline">close</button>
+            <div className="mt-3 flex items-center gap-3 text-[11px]">
+              <a href={`/fish/${selected._id}`} className="text-kelp underline">its own page</a>
+              <button onClick={() => { navigator.clipboard?.writeText(`${window.location.origin}/fish/${selected._id}`); say("Link copied. Share it, people will come to feed or eat it."); }} className="text-sand underline">copy share link</button>
+              <button onClick={() => { setSelected(null); setMode("idle"); }} className="text-foam/60 underline">close</button>
+            </div>
           </div>
         )}
 

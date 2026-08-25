@@ -108,7 +108,7 @@ export default function Below({ state, onFeed, onSpawn, myIds }: { state: StateR
                   <td className={f.kills ? "text-coral" : "text-foam/40"}>{f.kills ?? 0}</td>
                   <td className="text-foam/70">${f.weight + 1}</td>
                   <td className="text-foam/50">{ago(f.createdAt)}</td>
-                  <td><button onClick={() => onFeed(f)} className="rounded bg-sand px-3 py-1 text-xs font-semibold text-abyss hover:brightness-110">Feed</button></td>
+                  <td className="whitespace-nowrap"><a href={`/fish/${f._id}`} className="mr-2 text-xs text-foam/50 underline hover:text-foam">page</a><button onClick={() => onFeed(f)} className="rounded bg-sand px-3 py-1 text-xs font-semibold text-abyss hover:brightness-110">Feed</button></td>
                 </tr>
               ))}
             </tbody>
