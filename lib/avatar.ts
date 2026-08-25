@@ -35,9 +35,10 @@ export function avatarSources(rawUrl: string, custom?: string): string[] {
     `https://${host}/favicon.png`,
     `https://${host}/apple-touch-icon.png`,
     `https://${r}/favicon.ico`,
+    `https://www.google.com/s2/favicons?domain=${host}&sz=128`,
+    `https://www.google.com/s2/favicons?domain=${r}&sz=128`,
     `https://icons.duckduckgo.com/ip3/${host}.ico`,
     `https://icons.duckduckgo.com/ip3/${r}.ico`,
-    `https://www.google.com/s2/favicons?domain=${r}&sz=128`,
   );
   return out;
 }

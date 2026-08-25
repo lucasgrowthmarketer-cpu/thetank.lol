@@ -9,7 +9,8 @@ function Logo({ f, size = 28 }: { f: PublicFish; size?: number }) {
     <span className="inline-flex shrink-0 items-center justify-center overflow-hidden rounded bg-white" style={{ width: size, height: size }}>
       {sources.length ? (
         // eslint-disable-next-line @next/next/no-img-element
-        <img src={sources[0]} alt="" width={size - 6} height={size - 6}
+        <img src={sources[0]} alt="" width={size - 6} height={size - 6} referrerPolicy="no-referrer"
+          onLoad={(e) => { const el = e.currentTarget; if (el.naturalWidth > 1) return; const i = Number(el.dataset.i || 0) + 1; if (i < sources.length) { el.dataset.i = String(i); el.src = sources[i]; } }}
           onError={(e) => { const el = e.currentTarget; const i = Number(el.dataset.i || 0) + 1; if (i < sources.length) { el.dataset.i = String(i); el.src = sources[i]; } else { el.style.display = "none"; (el.nextSibling as HTMLElement).style.display = "inline"; } }} />
       ) : null}
       <span className="font-pixel text-abyss" style={{ display: sources.length ? "none" : "inline" }}>{f.name[0]}</span>

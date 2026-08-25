@@ -35,8 +35,13 @@ function logoImg(url: string, custom?: string) {
   const sources = avatarSources(url, custom);
   if (!sources.length) return undefined;
   im = new Image();
+  // Many hosts (Vercel, Cloudflare) refuse hotlinked icons based on the Referer header.
+  im.referrerPolicy = "no-referrer";
   let i = 0;
-  im.onerror = () => { i += 1; if (i < sources.length) im!.src = sources[i]; };
+  const next = () => { i += 1; if (i < sources.length) im!.src = sources[i]; };
+  im.onerror = next;
+  // Some servers answer 200 with an HTML page or a 1x1 tracking pixel: treat both as a miss.
+  im.onload = () => { if (im!.naturalWidth <= 1) next(); };
   im.src = sources[0];
   imgCache.set(key, im);
   return im;
