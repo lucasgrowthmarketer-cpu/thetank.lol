@@ -1,0 +1,49 @@
+@import "@fontsource/pixelify-sans/400.css";
+@import "@fontsource/pixelify-sans/700.css";
+@import "@fontsource/space-grotesk/400.css";
+@import "@fontsource/space-grotesk/600.css";
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+html, body { margin: 0; background: #04161f; color: #e6f7f4; }
+html { scroll-behavior: smooth; }
+body { font-family: "Space Grotesk", system-ui, sans-serif; }
+button:focus-visible, a:focus-visible, input:focus-visible { outline: 2px solid #ff6a3d; outline-offset: 2px; }
+
+.led {
+  font-family: "Pixelify Sans", monospace;
+  color: #ffb347;
+  text-shadow: 0 0 6px rgba(255,179,71,.9), 0 0 18px rgba(255,120,40,.5);
+  letter-spacing: .04em;
+}
+.sign {
+  background: linear-gradient(#0a2b39, #061c26);
+  border: 3px solid #1d3f4d;
+  box-shadow: inset 0 0 0 2px #041219, 0 8px 30px rgba(0,0,0,.45);
+  image-rendering: pixelated;
+}
+.glass {
+  background: rgba(4, 22, 31, .72);
+  backdrop-filter: blur(6px);
+  border: 1px solid rgba(230,247,244,.12);
+}
+.caustics {
+  position: absolute; inset: 0; pointer-events: none;
+  background:
+    radial-gradient(ellipse 60% 40% at 20% 0%, rgba(120,220,230,.18), transparent 60%),
+    radial-gradient(ellipse 50% 35% at 75% 0%, rgba(120,220,230,.12), transparent 60%);
+  animation: sway 9s ease-in-out infinite alternate;
+}
+@keyframes sway { from { transform: translateX(-2%); } to { transform: translateX(2%); } }
+@media (prefers-reduced-motion: reduce) { .caustics { animation: none; } }
+.ticker-item { animation: rise .5s ease-out; }
+@keyframes rise { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
+
+.tbl th { font-size: 10px; text-transform: uppercase; letter-spacing: .12em; color: rgba(230,247,244,.5); font-weight: 600; text-align: left; padding: 10px 12px; }
+.tbl td { padding: 10px 12px; border-top: 1px solid rgba(230,247,244,.08); vertical-align: middle; }
+.tbl tr:hover td { background: rgba(230,247,244,.03); }
+.rank { font-family: "Pixelify Sans", monospace; color: #d9b46f; }
+.section-title { font-family: "Pixelify Sans", monospace; font-size: clamp(28px, 4vw, 44px); line-height: 1; }
+.eyebrow { font-size: 10px; text-transform: uppercase; letter-spacing: .18em; color: #3fd98a; }
+.law { border-left: 3px solid #d9b46f; padding-left: 14px; }
